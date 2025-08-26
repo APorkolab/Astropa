@@ -7,7 +7,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 import com.porkolab.chinesezodiac.entity.Zodiac;
-import com.porkolab.chinesezodiac.reposítory.ZodiacRepository;
+import com.porkolab.chinesezodiac.repository.ZodiacRepository;
 
 
 
