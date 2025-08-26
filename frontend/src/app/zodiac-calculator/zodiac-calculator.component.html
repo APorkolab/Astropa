@@ -1,0 +1,14 @@
+<div>
+  <h2>Kínai Zodiákus Kalkulátor</h2>
+  <form (ngSubmit)="getZodiac()">
+    <label for="birthdate">Add meg a születési dátumodat:</label>
+    <input type="date" id="birthdate" [(ngModel)]="birthdate" name="birthdate" required>
+    <button type="submit">Kalkuláció</button>
+  </form>
+
+  <div *ngIf="zodiac">
+    <h3>A te kínai zodiákusod:</h3>
+    <p><strong>{{ zodiac.name }}</strong></p>
+    <p>{{ zodiac.description }}</p>
+  </div>
+</div>

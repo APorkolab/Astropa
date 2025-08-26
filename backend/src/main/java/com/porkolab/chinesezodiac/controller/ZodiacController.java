@@ -1,26 +1,16 @@
 package com.porkolab.chinesezodiac.controller;
 
+import com.porkolab.chinesezodiac.entity.Zodiac;
+import com.porkolab.chinesezodiac.service.ZodiacService;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.porkolab.chinesezodiac.entity.Zodiac;
-import com.porkolab.chinesezodiac.service.ZodiacService;
-
 @RestController
-@RequestMapping("/zodiacs")
+@RequestMapping("/api/zodiacs")
 public class ZodiacController {
 
     private final ZodiacService zodiacService;
@@ -55,7 +45,7 @@ public class ZodiacController {
     }
 
     @GetMapping("/findByDate")
-    public List<Zodiac> findByDate(@RequestParam("date") @DateTimeFormat(pattern = "yyyy-MM-dd") Date date) {
+    public List<Zodiac> findByDate(@RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return zodiacService.findByDate(date);
     }
 

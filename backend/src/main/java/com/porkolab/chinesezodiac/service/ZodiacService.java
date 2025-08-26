@@ -1,21 +1,19 @@
 package com.porkolab.chinesezodiac.service;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.stereotype.Service;
-
 import com.porkolab.chinesezodiac.entity.Zodiac;
 import com.porkolab.chinesezodiac.repository.ZodiacRepository;
+import org.springframework.stereotype.Service;
 
-
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ZodiacService {
 
     private final ZodiacRepository zodiacRepository;
-  public ZodiacService(ZodiacRepository zodiacRepository) {
+
+    public ZodiacService(ZodiacRepository zodiacRepository) {
         this.zodiacRepository = zodiacRepository;
     }
 
@@ -39,19 +37,19 @@ public class ZodiacService {
         return zodiacRepository.findByName(name);
     }
 
-    public List<Zodiac> findByDate(Date date) {
+    public List<Zodiac> findByDate(LocalDate date) {
         return zodiacRepository.findByDate(date);
     }
 
     public Zodiac update(Long id, Zodiac zodiac) {
         Optional<Zodiac> currentZodiac = findById(id);
-        if(currentZodiac.isPresent()){
+        if (currentZodiac.isPresent()) {
             Zodiac updatedZodiac = currentZodiac.get();
             updatedZodiac.setName(zodiac.getName());
             updatedZodiac.setStartDate(zodiac.getStartDate());
             updatedZodiac.setEndDate(zodiac.getEndDate());
             return save(updatedZodiac);
-        }else {
+        } else {
             throw new IllegalArgumentException("Zodiac not found for given id");
         }
     }

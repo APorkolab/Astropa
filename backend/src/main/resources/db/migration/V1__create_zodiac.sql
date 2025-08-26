@@ -1,4 +1,4 @@
-CREATE TABLE Zodiac (
+CREATE TABLE zodiac (
     id BIGINT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     start_date DATE NOT NULL,

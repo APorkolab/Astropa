@@ -1,33 +1,37 @@
 package com.porkolab.chinesezodiac.entity;
 
-
-
-import javax.persistence.*;
-import java.util.Date;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "zodiac")
 public class Zodiac {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "name", nullable = false)
     private String name;
 
     @Column(name = "start_date", nullable = false)
-    private Date startDate;
+    private LocalDate startDate;
 
     @Column(name = "end_date", nullable = false)
-    private Date endDate;
+    private LocalDate endDate;
+
+    @Column(name = "description")
+    private String description;
 
     public Zodiac() {
     }
 
-    public Zodiac(String name, Date startDate, Date endDate) {
+    public Zodiac(String name, LocalDate startDate, LocalDate endDate, String description) {
         this.name = name;
         this.startDate = startDate;
         this.endDate = endDate;
+        this.description = description;
     }
 
     public Long getId() {
@@ -46,20 +50,27 @@ public class Zodiac {
         this.name = name;
     }
 
-    public Date getStartDate() {
+    public LocalDate getStartDate() {
         return startDate;
     }
 
-    public void setStartDate(Date startDate) {
+    public void setStartDate(LocalDate startDate) {
         this.startDate = startDate;
     }
 
-    public Date getEndDate() {
+    public LocalDate getEndDate() {
         return endDate;
     }
 
-    public void setEndDate(Date endDate) {
+    public void setEndDate(LocalDate endDate) {
         this.endDate = endDate;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
 }
