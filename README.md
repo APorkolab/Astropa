@@ -30,7 +30,7 @@ A full-stack web application that provides users with detailed information about
     -   Flyway (for database migrations)
     -   SpringDoc OpenAPI (for Swagger API documentation)
 -   **Frontend:**
-    -   Angular 16
+    -   Angular 20
     -   TypeScript
     -   HTML/SCSS
     -   Node.js
@@ -45,7 +45,7 @@ A full-stack web application that provides users with detailed information about
 -   Java 21 or later
 -   Maven 3.6 or later
 -   Node.js 16 or later
--   Angular CLI 16 or later
+-   Angular CLI 20 or later
 
 ### Backend Setup
 
