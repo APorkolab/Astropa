@@ -125,5 +125,3 @@ This project includes a Continuous Integration (CI) pipeline using GitHub Action
 The CI pipeline consists of two jobs:
 -   `build-backend`: Builds the Spring Boot application.
 -   `build-frontend`: Builds the Angular application.
-
-**Note:** The test execution steps are currently disabled in the CI pipeline due to an environment issue.
