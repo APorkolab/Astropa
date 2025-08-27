@@ -1,45 +1,73 @@
 import { Component, OnInit } from '@angular/core';
-import { AuthService } from '../auth.service';
+import { AuthService, AuthResponse, LoginCredentials } from '../auth.service';
 import { TokenStorageService } from '../token-storage.service';
 
+interface LoginForm {
+  username: string;
+  password: string;
+}
+
 @Component({
-    selector: 'app-login',
-    templateUrl: './login.component.html',
-    styleUrls: ['./login.component.scss'],
-    standalone: false
+  selector: 'app-login',
+  templateUrl: './login.component.html',
+  styleUrls: ['./login.component.scss'],
+  standalone: false
 })
 export class LoginComponent implements OnInit {
-  form: any = {};
+  form: LoginForm = { username: '', password: '' };
   isLoggedIn = false;
   isLoginFailed = false;
   errorMessage = '';
   roles: string[] = [];
 
-  constructor(private authService: AuthService, private tokenStorage: TokenStorageService) { }
+  constructor(
+    private readonly authService: AuthService,
+    private readonly tokenStorage: TokenStorageService
+  ) { }
 
   ngOnInit(): void {
-    if (this.tokenStorage.getToken()) {
+    const token = this.tokenStorage.getToken?.();
+    if (typeof token === 'string' && token.length > 0) {
       this.isLoggedIn = true;
-      this.roles = this.tokenStorage.getUser().roles;
+      const user = this.tokenStorage.getUser?.();
+      this.roles = Array.isArray(user?.roles) ? user.roles as string[] : [];
     }
   }
 
   onSubmit(): void {
-    this.authService.login(this.form).subscribe(
-      data => {
-        this.tokenStorage.saveToken(data.accessToken);
-        this.tokenStorage.saveUser(data);
+    const credentials: LoginCredentials = {
+      username: this.form.username ?? '',
+      password: this.form.password ?? ''
+    };
+
+    this.authService.login(credentials).subscribe({
+      next: (data: AuthResponse) => {
+        // Token több néven is érkezhet; biztosítsuk a string típust mentés előtt
+        const token =
+          (typeof data.accessToken === 'string' && data.accessToken) ||
+          (typeof (data as any).token === 'string' && (data as any).token) ||
+          (typeof (data as any).access_token === 'string' && (data as any).access_token) ||
+          '';
+
+        if (token) {
+          this.tokenStorage.saveToken(token);
+        }
+
+        this.tokenStorage.saveUser(data as any);
 
         this.isLoginFailed = false;
         this.isLoggedIn = true;
-        this.roles = this.tokenStorage.getUser().roles;
+
+        const user = this.tokenStorage.getUser?.();
+        this.roles = Array.isArray(user?.roles) ? user.roles as string[] : [];
+
         this.reloadPage();
       },
-      err => {
-        this.errorMessage = err.error.message;
+      error: (err: any) => {
+        this.errorMessage = err?.error?.message ?? 'Bejelentkezési hiba.';
         this.isLoginFailed = true;
       }
-    );
+    });
   }
 
   reloadPage(): void {
