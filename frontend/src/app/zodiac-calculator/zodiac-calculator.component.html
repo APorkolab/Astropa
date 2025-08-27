@@ -6,9 +6,79 @@
     <button type="submit">Kalkuláció</button>
   </form>
 
+  <div *ngIf="error" class="error">
+    <h3>Hiba történt:</h3>
+    <p>{{ error.message }}</p>
+  </div>
+
   <div *ngIf="zodiac">
     <h3>A te kínai zodiákusod:</h3>
     <p><strong>{{ zodiac.name }}</strong></p>
     <p>{{ zodiac.description }}</p>
+    <button (click)="getCompatibility()">Kompatibilitás a Patkánnyal</button>
+    <button (click)="getLuckyYears()">Szerencsés évek</button>
+    <button (click)="getCareers()">Karrier lehetőségek</button>
+  </div>
+
+  <div *ngIf="compatibility">
+    <h3>Kompatibilitás a Patkánnyal:</h3>
+    <p><strong>{{ compatibility.compatibilityType }}</strong></p>
+    <p>{{ compatibility.description }}</p>
+  </div>
+
+  <div *ngIf="luckyYears">
+    <h3>Szerencsés/Szerencsétlen évek:</h3>
+    <div *ngFor="let luckyYear of luckyYears">
+      <p><strong>{{ luckyYear.year }}: {{ luckyYear.lucky ? 'Szerencsés' : 'Szerencsétlen' }}</strong></p>
+      <p>{{ luckyYear.description }}</p>
+    </div>
+  </div>
+
+  <div *ngIf="careers">
+    <h3>Karrier lehetőségek:</h3>
+    <div *ngFor="let zodiacCareer of careers">
+      <p><strong>{{ zodiacCareer.career.name }}</strong></p>
+      <p>{{ zodiacCareer.career.description }}</p>
+    </div>
+  </div>
+
+  <div *ngIf="personalities">
+    <h3>Személyiségjegyek:</h3>
+    <div *ngFor="let zodiacPersonality of personalities">
+      <p><strong>{{ zodiacPersonality.personality.name }}</strong></p>
+      <p>{{ zodiacPersonality.personality.description }}</p>
+    </div>
+  </div>
+
+  <div *ngIf="lifeStages">
+    <h3>Életszakaszok:</h3>
+    <div *ngFor="let lifeStage of lifeStages">
+      <p><strong>{{ lifeStage.name }}</strong></p>
+      <p>{{ lifeStage.description }}</p>
+    </div>
+  </div>
+
+  <div *ngIf="projects">
+    <h3>Személyes vagy üzleti projektek:</h3>
+    <div *ngFor="let project of projects">
+      <p><strong>{{ project.name }}</strong></p>
+      <p>{{ project.description }}</p>
+    </div>
+  </div>
+
+  <div *ngIf="goals">
+    <h3>Célok és álmok:</h3>
+    <div *ngFor="let goal of goals">
+      <p><strong>{{ goal.name }}</strong></p>
+      <p>{{ goal.description }}</p>
+    </div>
+  </div>
+
+  <div *ngIf="divinations">
+    <h3>Jóslási és védikus technikák:</h3>
+    <div *ngFor="let divination of divinations">
+      <p><strong>{{ divination.name }}</strong></p>
+      <p>{{ divination.description }}</p>
+    </div>
   </div>
 </div>

@@ -1,6 +1,7 @@
 package com.porkolab.chinesezodiac.service;
 
 import com.porkolab.chinesezodiac.entity.Zodiac;
+import com.porkolab.chinesezodiac.exception.ResourceNotFoundException;
 import com.porkolab.chinesezodiac.repository.ZodiacRepository;
 import org.springframework.stereotype.Service;
 
@@ -38,19 +39,19 @@ public class ZodiacService {
     }
 
     public List<Zodiac> findByDate(LocalDate date) {
-        return zodiacRepository.findByDate(date);
+        List<Zodiac> zodiacs = zodiacRepository.findByDate(date);
+        if (zodiacs.isEmpty()) {
+            throw new ResourceNotFoundException("Zodiac not found for date: " + date);
+        }
+        return zodiacs;
     }
 
     public Zodiac update(Long id, Zodiac zodiac) {
-        Optional<Zodiac> currentZodiac = findById(id);
-        if (currentZodiac.isPresent()) {
-            Zodiac updatedZodiac = currentZodiac.get();
-            updatedZodiac.setName(zodiac.getName());
-            updatedZodiac.setStartDate(zodiac.getStartDate());
-            updatedZodiac.setEndDate(zodiac.getEndDate());
-            return save(updatedZodiac);
-        } else {
-            throw new IllegalArgumentException("Zodiac not found for given id");
-        }
+        return findById(id).map(existingZodiac -> {
+            existingZodiac.setName(zodiac.getName());
+            existingZodiac.setStartDate(zodiac.getStartDate());
+            existingZodiac.setEndDate(zodiac.getEndDate());
+            return save(existingZodiac);
+        }).orElseThrow(() -> new ResourceNotFoundException("Zodiac not found with id: " + id));
     }
 }
