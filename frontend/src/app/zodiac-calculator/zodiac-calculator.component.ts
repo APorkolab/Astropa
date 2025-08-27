@@ -3,9 +3,10 @@ import { ZodiacService } from '../zodiac.service';
 import { Observable } from 'rxjs';
 
 @Component({
-  selector: 'app-zodiac-calculator',
-  templateUrl: './zodiac-calculator.component.html',
-  styleUrls: ['./zodiac-calculator.component.scss']
+    selector: 'app-zodiac-calculator',
+    templateUrl: './zodiac-calculator.component.html',
+    styleUrls: ['./zodiac-calculator.component.scss'],
+    standalone: false
 })
 export class ZodiacCalculatorComponent {
   birthdate: string = '';
