@@ -1,9 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { of } from 'rxjs';
 import { ZodiacCalculatorComponent } from './zodiac-calculator.component';
 import { ZodiacService } from '../zodiac.service';
 import { FormsModule } from '@angular/forms';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 describe('ZodiacCalculatorComponent', () => {
   let component: ZodiacCalculatorComponent;
@@ -37,12 +38,14 @@ describe('ZodiacCalculatorComponent', () => {
 
 
     await TestBed.configureTestingModule({
-      declarations: [ ZodiacCalculatorComponent ],
-      imports: [ HttpClientTestingModule, FormsModule ],
-      providers: [
-        { provide: ZodiacService, useValue: zodiacServiceSpy }
-      ]
-    })
+    declarations: [ZodiacCalculatorComponent],
+    imports: [FormsModule],
+    providers: [
+        { provide: ZodiacService, useValue: zodiacServiceSpy },
+        provideHttpClient(withInterceptorsFromDi()),
+        provideHttpClientTesting()
+    ]
+})
     .compileComponents();
 
     fixture = TestBed.createComponent(ZodiacCalculatorComponent);
