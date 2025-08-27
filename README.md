@@ -1,4 +1,4 @@
-# Chinese Zodiac Information App
+# Astropa - The Ultimate Chinese Zodiac Information App
 
 A full-stack web application that provides users with detailed information about their Chinese zodiac sign. Users can enter their birth date to find out their zodiac sign and explore various aspects related to it, such as compatibility with other signs, lucky and unlucky years, suitable careers, personality traits, and more.
 
