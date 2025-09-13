@@ -1,0 +1,176 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: astropa-backend-config
+  namespace: astropa
+  labels:
+    app: astropa
+    component: backend
+data:
+  application.properties: |
+    spring.application.name=astropa
+    spring.profiles.active=kubernetes
+    
+    # Database Configuration
+    spring.datasource.url=jdbc:mariadb://astropa-database:3306/astropa
+    spring.datasource.driver-class-name=org.mariadb.jdbc.Driver
+    spring.jpa.database-platform=org.hibernate.dialect.MariaDBDialect
+    spring.jpa.hibernate.ddl-auto=validate
+    spring.jpa.show-sql=false
+    
+    # Flyway Configuration
+    spring.flyway.enabled=true
+    spring.flyway.locations=classpath:db/migration
+    spring.flyway.baseline-on-migrate=true
+    
+    # Redis Configuration
+    spring.redis.host=astropa-redis
+    spring.redis.port=6379
+    spring.redis.timeout=2000ms
+    
+    # Actuator Configuration
+    management.endpoints.web.exposure.include=health,info,metrics,prometheus
+    management.endpoint.health.show-details=always
+    management.metrics.export.prometheus.enabled=true
+    
+    # Security Configuration
+    astropa.cors.allowed-origins=https://astropa.yourdomain.com
+    astropa.jwt.expiration=86400000
+    
+    # Logging Configuration
+    logging.level.com.porkolab.astropa=INFO
+    logging.level.org.springframework.security=INFO
+    logging.pattern.console=%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
+    
+  logback-spring.xml: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <configuration>
+        <springProfile name="kubernetes">
+            <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+                <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+                    <providers>
+                        <timestamp/>
+                        <logLevel/>
+                        <loggerName/>
+                        <message/>
+                        <mdc/>
+                        <arguments/>
+                        <stackTrace/>
+                    </providers>
+                </encoder>
+            </appender>
+            <root level="INFO">
+                <appender-ref ref="STDOUT"/>
+            </root>
+        </springProfile>
+    </configuration>
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: astropa-frontend-config
+  namespace: astropa
+  labels:
+    app: astropa
+    component: frontend
+data:
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+    
+    http {
+        include       /etc/nginx/mime.types;
+        default_type  application/octet-stream;
+        
+        log_format json_combined escape=json
+          '{'
+            '"time_local":"$time_local",'
+            '"remote_addr":"$remote_addr",'
+            '"remote_user":"$remote_user",'
+            '"request":"$request",'
+            '"status": "$status",'
+            '"body_bytes_sent":"$body_bytes_sent",'
+            '"request_time":"$request_time",'
+            '"http_referrer":"$http_referer",'
+            '"http_user_agent":"$http_user_agent",'
+            '"http_x_forwarded_for":"$http_x_forwarded_for"'
+          '}';
+        
+        access_log /var/log/nginx/access.log json_combined;
+        error_log  /var/log/nginx/error.log;
+        
+        sendfile        on;
+        tcp_nopush      on;
+        tcp_nodelay     on;
+        keepalive_timeout  65;
+        
+        gzip on;
+        gzip_vary on;
+        gzip_min_length 1024;
+        gzip_proxied expired no-cache no-store private auth;
+        gzip_types
+            text/plain
+            text/css
+            text/xml
+            text/javascript
+            application/javascript
+            application/xml+rss
+            application/json;
+        
+        server {
+            listen 80;
+            server_name _;
+            root /usr/share/nginx/html;
+            index index.html;
+            
+            # Security headers
+            add_header X-Frame-Options DENY;
+            add_header X-Content-Type-Options nosniff;
+            add_header X-XSS-Protection "1; mode=block";
+            add_header Referrer-Policy "strict-origin-when-cross-origin";
+            add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';";
+            
+            location / {
+                try_files $uri $uri/ /index.html;
+            }
+            
+            location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+                expires 1y;
+                add_header Cache-Control "public, immutable";
+            }
+            
+            location /health {
+                access_log off;
+                return 200 "healthy\n";
+                add_header Content-Type text/plain;
+            }
+            
+            location /api {
+                proxy_pass http://astropa-backend:8080;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_connect_timeout 30s;
+                proxy_send_timeout 30s;
+                proxy_read_timeout 30s;
+            }
+        }
+    }
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: astropa-secrets
+  namespace: astropa
+  labels:
+    app: astropa
+type: Opaque
+stringData:
+  database-username: astropa
+  database-password: changeme-production-password
+  jwt-secret: changeme-super-secret-jwt-key-for-production
+  redis-password: ""

@@ -1,0 +1,46 @@
+{
+  "name": "astropa-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Astropa - Chinese Zodiac Information Platform",
+  "scripts": {
+    "prepare": "husky install",
+    "install:all": "npm install && cd frontend && npm install --legacy-peer-deps && cd ../backend && mvn install -DskipTests",
+    "dev:frontend": "cd frontend && npm start",
+    "dev:backend": "cd backend && ./mvnw spring-boot:run",
+    "build:frontend": "cd frontend && npm run build:prod",
+    "build:backend": "cd backend && ./mvnw clean package -DskipTests",
+    "test:frontend": "cd frontend && npm run test:ci",
+    "test:backend": "cd backend && mvn test",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && mvn spotbugs:check",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
+  },
+  "devDependencies": {
+    "husky": "^8.0.3",
+    "lint-staged": "^15.1.0",
+    "prettier": "^3.0.0"
+  },
+  "lint-staged": {
+    "frontend/src/**/*.{ts,html,scss}": [
+      "cd frontend && npm run lint:fix"
+    ],
+    "*.{js,json,md}": [
+      "prettier --write"
+    ]
+  },
+  "workspaces": [
+    "frontend"
+  ],
+  "keywords": [
+    "zodiac",
+    "spring-boot",
+    "angular",
+    "microservices",
+    "kubernetes"
+  ],
+  "author": "Dr. Porkolab Adam",
+  "license": "MIT"
+}

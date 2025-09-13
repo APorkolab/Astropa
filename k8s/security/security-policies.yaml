@@ -1,0 +1,261 @@
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: astropa-psp
+  namespace: astropa
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  seLinux:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+  readOnlyRootFilesystem: false
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: astropa-psp-user
+rules:
+- apiGroups: ['policy']
+  resources: ['podsecuritypolicies']
+  verbs: ['use']
+  resourceNames:
+  - astropa-psp
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: astropa-psp-binding
+  namespace: astropa
+roleRef:
+  kind: ClusterRole
+  name: astropa-psp-user
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: astropa-backend
+  namespace: astropa
+- kind: ServiceAccount
+  name: astropa-frontend
+  namespace: astropa
+
+---
+# OPA Gatekeeper constraints
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: astroparequiredsecuritycontext
+spec:
+  crd:
+    spec:
+      names:
+        kind: AstropaRequiredSecurityContext
+      validation:
+        type: object
+        properties:
+          runAsNonRoot:
+            type: boolean
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package astroparequiredsecuritycontext
+        
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          not container.securityContext.runAsNonRoot
+          msg := "Container must run as non-root user"
+        }
+        
+        violation[{"msg": msg}] {
+          not input.review.object.spec.securityContext.runAsNonRoot
+          msg := "Pod must run as non-root user"
+        }
+
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: AstropaRequiredSecurityContext
+metadata:
+  name: astropa-security-context
+spec:
+  match:
+    kinds:
+      - apiGroups: ["apps"]
+        kinds: ["Deployment"]
+    namespaces: ["astropa"]
+  parameters:
+    runAsNonRoot: true
+
+---
+# Falco security rules
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: falco-astropa-rules
+  namespace: falco-system
+data:
+  astropa_rules.yaml: |
+    - rule: Astropa Unexpected Network Activity
+      desc: Detect unexpected network activity in Astropa namespace
+      condition: >
+        k8s_audit and ka.target.namespace="astropa" and
+        ka.verb in (create, update, patch) and
+        ka.target.resource=services and
+        not ka.user.name in (system:serviceaccount:astropa:astropa-backend)
+      output: >
+        Unexpected network change in Astropa namespace
+        (user=%ka.user.name verb=%ka.verb resource=%ka.target.resource
+        name=%ka.target.name namespace=%ka.target.namespace)
+      priority: WARNING
+      tags: [astropa, network]
+
+    - rule: Astropa Privilege Escalation Attempt
+      desc: Detect privilege escalation attempts in Astropa pods
+      condition: >
+        spawned_process and container and
+        k8s.ns.name="astropa" and
+        proc.name in (su, sudo, setuid, setgid) and
+        not proc.pname in (systemd, dbus)
+      output: >
+        Privilege escalation attempt in Astropa
+        (user=%user.name command=%proc.cmdline container=%container.name
+        namespace=%k8s.ns.name pod=%k8s.pod.name)
+      priority: HIGH
+      tags: [astropa, privilege_escalation]
+
+    - rule: Astropa Secret Access
+      desc: Monitor secret access in Astropa namespace
+      condition: >
+        open_read and k8s.ns.name="astropa" and
+        fd.name contains "/var/run/secrets/kubernetes.io"
+      output: >
+        Secret accessed in Astropa pod
+        (file=%fd.name command=%proc.cmdline container=%container.name
+        namespace=%k8s.ns.name pod=%k8s.pod.name)
+      priority: INFO
+      tags: [astropa, secrets]
+
+---
+# Network Security - Calico Network Policy
+apiVersion: projectcalico.org/v3
+kind: NetworkPolicy
+metadata:
+  name: astropa-strict-policy
+  namespace: astropa
+spec:
+  selector: app == 'astropa'
+  types:
+  - Ingress
+  - Egress
+  
+  # Ingress rules
+  ingress:
+  # Allow traffic from ingress controller
+  - action: Allow
+    source:
+      namespaceSelector: name == 'nginx-ingress'
+    destination:
+      ports: [80, 8080]
+  
+  # Allow internal communication
+  - action: Allow
+    source:
+      namespaceSelector: name == 'astropa'
+    destination:
+      ports: [3306, 6379, 8080, 80]
+  
+  # Allow monitoring
+  - action: Allow
+    source:
+      namespaceSelector: name == 'monitoring'
+    destination:
+      ports: [8080]
+  
+  # Egress rules
+  egress:
+  # Allow DNS
+  - action: Allow
+    destination:
+      ports: [53]
+      namespaceSelector: name == 'kube-system'
+  
+  # Allow HTTPS for external APIs
+  - action: Allow
+    destination:
+      nets: [0.0.0.0/0]
+      ports: [443]
+  
+  # Allow internal communication
+  - action: Allow
+    destination:
+      namespaceSelector: name == 'astropa'
+      ports: [3306, 6379, 8080, 80]
+
+---
+# Image security scanning with Trivy
+apiVersion: aquasecurity.github.io/v1alpha1
+kind: VulnerabilityReport
+metadata:
+  name: astropa-backend-scan
+  namespace: astropa
+spec:
+  artifact:
+    repository: ghcr.io/yourusername/astropa-2/backend
+    tag: latest
+  scanner:
+    name: Trivy
+    vendor: Aqua Security
+  registry:
+    server: ghcr.io
+
+---
+# Admission webhook for image scanning
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionWebhook
+metadata:
+  name: image-security-webhook
+webhooks:
+- name: image.security.astropa.io
+  clientConfig:
+    service:
+      name: image-security-service
+      namespace: security-system
+      path: "/validate"
+  rules:
+  - operations: [ "CREATE", "UPDATE" ]
+    apiGroups: ["apps"]
+    apiVersions: ["v1"]
+    resources: ["deployments"]
+  namespaceSelector:
+    matchLabels:
+      name: astropa
+  admissionReviewVersions: ["v1", "v1beta1"]
+  sideEffects: None
+  failurePolicy: Fail
+
+---
+# Secret encryption configuration
+apiVersion: apiserver.k8s.io/v1
+kind: EncryptionConfiguration
+resources:
+- resources:
+  - secrets
+  providers:
+  - aescbc:
+      keys:
+      - name: key1
+        secret: c2VjcmV0IGlzIHNlY3VyZQ==
+  - identity: {}

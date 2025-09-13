@@ -1,0 +1,273 @@
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: astropa-backend-monitor
+  namespace: astropa
+  labels:
+    app: astropa
+    component: backend
+spec:
+  selector:
+    matchLabels:
+      app: astropa
+      component: backend
+  endpoints:
+  - port: http
+    path: /actuator/prometheus
+    interval: 30s
+    scrapeTimeout: 10s
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-astropa
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  astropa-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Astropa Application Dashboard",
+        "tags": ["astropa", "java", "angular"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Application Health",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "up{job=\"astropa-backend\"}",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "green", "value": 1}
+                  ]
+                }
+              }
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+          },
+          {
+            "id": 2,
+            "title": "HTTP Request Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(rate(http_server_requests_seconds_count{job=\"astropa-backend\"}[5m])) by (method, uri)",
+                "refId": "A"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+          },
+          {
+            "id": 3,
+            "title": "HTTP Response Times",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"astropa-backend\"}[5m])) by (le))",
+                "refId": "A",
+                "legendFormat": "95th percentile"
+              },
+              {
+                "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{job=\"astropa-backend\"}[5m])) by (le))",
+                "refId": "B",
+                "legendFormat": "50th percentile"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+          },
+          {
+            "id": 4,
+            "title": "JVM Memory Usage",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "jvm_memory_used_bytes{job=\"astropa-backend\", area=\"heap\"}",
+                "refId": "A",
+                "legendFormat": "Heap Used"
+              },
+              {
+                "expr": "jvm_memory_max_bytes{job=\"astropa-backend\", area=\"heap\"}",
+                "refId": "B",
+                "legendFormat": "Heap Max"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+          },
+          {
+            "id": 5,
+            "title": "Database Connection Pool",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "hikaricp_connections_active{job=\"astropa-backend\"}",
+                "refId": "A",
+                "legendFormat": "Active Connections"
+              },
+              {
+                "expr": "hikaricp_connections_idle{job=\"astropa-backend\"}",
+                "refId": "B",
+                "legendFormat": "Idle Connections"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+          },
+          {
+            "id": 6,
+            "title": "Error Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(rate(http_server_requests_seconds_count{job=\"astropa-backend\", status=~\"4..|5..\"}[5m])) / sum(rate(http_server_requests_seconds_count{job=\"astropa-backend\"}[5m]))",
+                "refId": "A",
+                "legendFormat": "Error Rate"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "30s"
+      }
+    }
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: astropa-alerts
+  namespace: astropa
+  labels:
+    app: astropa
+spec:
+  groups:
+  - name: astropa.rules
+    rules:
+    # Application availability
+    - alert: AstropaBackendDown
+      expr: up{job="astropa-backend"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Astropa backend is down"
+        description: "Astropa backend has been down for more than 1 minute."
+    
+    # High error rate
+    - alert: AstropaHighErrorRate
+      expr: sum(rate(http_server_requests_seconds_count{job="astropa-backend", status=~"5.."}[5m])) / sum(rate(http_server_requests_seconds_count{job="astropa-backend"}[5m])) > 0.05
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High error rate detected"
+        description: "Error rate is {{ $value | humanizePercentage }} for more than 5 minutes."
+    
+    # High response time
+    - alert: AstropaHighResponseTime
+      expr: histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job="astropa-backend"}[5m])) by (le)) > 1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High response time detected"
+        description: "95th percentile response time is {{ $value }}s for more than 5 minutes."
+    
+    # Memory usage
+    - alert: AstropaHighMemoryUsage
+      expr: (jvm_memory_used_bytes{job="astropa-backend", area="heap"} / jvm_memory_max_bytes{job="astropa-backend", area="heap"}) > 0.8
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High memory usage detected"
+        description: "JVM heap memory usage is {{ $value | humanizePercentage }} for more than 5 minutes."
+    
+    # Database connection pool
+    - alert: AstropaLowDatabaseConnections
+      expr: (hikaricp_connections_idle{job="astropa-backend"} / (hikaricp_connections_active{job="astropa-backend"} + hikaricp_connections_idle{job="astropa-backend"})) < 0.1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Low database connection pool availability"
+        description: "Less than 10% of database connections are available."
+
+---
+# Alerting rules for critical thresholds
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: astropa-sli-slo
+  namespace: astropa
+  labels:
+    app: astropa
+spec:
+  groups:
+  - name: astropa.sli
+    interval: 30s
+    rules:
+    # SLI: Availability (target: 99.9%)
+    - record: astropa:availability:rate5m
+      expr: |
+        avg_over_time(up{job="astropa-backend"}[5m])
+    
+    # SLI: Latency (target: 95% of requests < 500ms)
+    - record: astropa:latency:95percentile
+      expr: |
+        histogram_quantile(0.95, 
+          sum(rate(http_server_requests_seconds_bucket{job="astropa-backend"}[5m])) by (le)
+        )
+    
+    # SLI: Error rate (target: < 1%)
+    - record: astropa:error_rate:rate5m
+      expr: |
+        sum(rate(http_server_requests_seconds_count{job="astropa-backend", status=~"5.."}[5m])) /
+        sum(rate(http_server_requests_seconds_count{job="astropa-backend"}[5m]))
+    
+    # SLO violations
+    - alert: AstropaAvailabilitySLO
+      expr: astropa:availability:rate5m < 0.999
+      for: 2m
+      labels:
+        severity: critical
+        slo: availability
+      annotations:
+        summary: "Availability SLO violation"
+        description: "Availability is {{ $value | humanizePercentage }}, below 99.9% target."
+    
+    - alert: AstropaLatencySLO
+      expr: astropa:latency:95percentile > 0.5
+      for: 5m
+      labels:
+        severity: critical
+        slo: latency
+      annotations:
+        summary: "Latency SLO violation"
+        description: "95th percentile latency is {{ $value }}s, above 500ms target."
+    
+    - alert: AstropaErrorRateSLO
+      expr: astropa:error_rate:rate5m > 0.01
+      for: 2m
+      labels:
+        severity: critical
+        slo: error_rate
+      annotations:
+        summary: "Error rate SLO violation"
+        description: "Error rate is {{ $value | humanizePercentage }}, above 1% target."

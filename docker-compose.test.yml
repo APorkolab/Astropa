@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  # Test Database
+  test-database:
+    image: mariadb:10.11
+    container_name: astropa-test-db
+    environment:
+      MYSQL_ROOT_PASSWORD: testroot
+      MYSQL_DATABASE: astropa_test
+      MYSQL_USER: test
+      MYSQL_PASSWORD: testpass
+    ports:
+      - "3307:3306"
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Backend Test Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: astropa-test-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      SPRING_DATASOURCE_URL: jdbc:mariadb://test-database:3306/astropa_test
+      SPRING_DATASOURCE_USERNAME: test
+      SPRING_DATASOURCE_PASSWORD: testpass
+      JWT_SECRET: test-jwt-secret-key
+    ports:
+      - "8081:8080"
+    depends_on:
+      test-database:
+        condition: service_healthy
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Frontend Test Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: astropa-test-frontend
+    environment:
+      API_URL: http://backend:8080/api
+    ports:
+      - "8082:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Selenium for E2E testing
+  selenium:
+    image: selenium/standalone-chrome:latest
+    container_name: astropa-selenium
+    ports:
+      - "4444:4444"
+    networks:
+      - test-network
+    shm_size: 2gb
+    environment:
+      SE_OPTS: "--log-level INFO"
+
+networks:
+  test-network:
+    driver: bridge

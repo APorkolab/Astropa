@@ -1,42 +1,89 @@
-# Astropa - The Ultimate Chinese Zodiac Information App
+# 🌟 Astropa - Chinese Zodiac Information Platform
 
-A full-stack web application that provides users with detailed information about their Chinese zodiac sign. Users can enter their birth date to find out their zodiac sign and explore various aspects related to it, such as compatibility with other signs, lucky and unlucky years, suitable careers, personality traits, and more.
+[![CI/CD Pipeline](https://github.com/yourusername/astropa-2/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/yourusername/astropa-2/actions/workflows/ci-cd.yml)
+[![codecov](https://codecov.io/gh/yourusername/astropa-2/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/astropa-2)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=yourusername_astropa-2&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=yourusername_astropa-2)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Features
+A sophisticated, enterprise-grade full-stack web application that provides comprehensive Chinese zodiac information with modern architecture, security best practices, and production-ready infrastructure.
 
--   **Zodiac Calculator:** Determines a user's Chinese zodiac sign based on their birth date.
--   **Zodiac Data:** Provides information about zodiac signs for every year since 1900.
--   **Detailed Characteristics:** Displays detailed descriptions of each zodiac sign.
--   **Compatibility Checker:** Shows compatibility between different zodiac signs for personal and business relationships.
--   **Lucky/Unlucky Years:** Lists the lucky and unlucky years for each sign.
--   **Career Recommendations:** Suggests suitable careers and professions.
--   **Personality Insights:** Matches zodiac signs with specific personality traits.
--   **Life Stage Guidance:** Associates zodiac signs with different life stages.
--   **Project Suitability:** Recommends personal or business projects based on zodiac signs.
--   **Goals & Dreams:** Provides guidance on achieving goals and realizing dreams.
--   **Divination & Vedic Techniques:** Matches zodiac signs with suitable divination practices.
--   **Authentication:** Secure user registration and login using JWT.
+## 🏗️ Architecture Overview
 
-## Tech Stack
+Astropa follows a microservices-inspired architecture with clear separation of concerns:
 
--   **Backend:**
-    -   Java 21
-    -   Spring Boot 3
-    -   Spring Security
-    -   JWT (JSON Web Tokens)
-    -   Maven
-    -   JPA (Hibernate)
-    -   H2 Database (for development)
-    -   Flyway (for database migrations)
-    -   SpringDoc OpenAPI (for Swagger API documentation)
--   **Frontend:**
-    -   Angular 20
-    -   TypeScript
-    -   HTML/SCSS
-    -   Node.js
-    -   Angular CLI
--   **CI/CD:**
-    -   GitHub Actions
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Angular SPA   │───▶│   Spring Boot    │───▶│   MariaDB/H2    │
+│   (Frontend)    │    │   (Backend API)  │    │   (Database)    │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│     Nginx       │    │   JWT Security   │    │     Redis       │
+│  (Reverse Proxy)│    │   Spring Sec.    │    │   (Caching)     │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
+
+## 🚀 Features
+
+### Core Features
+- **🔮 Zodiac Calculator**: Determines Chinese zodiac sign based on birth date
+- **📊 Compatibility Checker**: Analyzes relationships between different zodiac signs
+- **🍀 Lucky/Unlucky Years**: Provides fortune predictions for each sign
+- **💼 Career Recommendations**: Suggests suitable professions and career paths
+- **🧠 Personality Insights**: Detailed personality trait analysis
+- **🎯 Life Guidance**: Provides guidance for different life stages
+- **📈 Project Suitability**: Recommends business and personal projects
+- **🌟 Goals & Dreams**: Helps align aspirations with zodiac characteristics
+- **🔮 Divination Techniques**: Matches zodiac signs with suitable divination practices
+
+### Technical Features
+- **🔐 JWT Authentication**: Secure token-based authentication system
+- **📝 OpenAPI Documentation**: Comprehensive Swagger/OpenAPI 3.0 documentation
+- **🔄 Database Migrations**: Flyway-based database version control
+- **📊 Health Monitoring**: Spring Boot Actuator endpoints
+- **🚀 Production-Ready**: Docker containers, CI/CD pipeline, monitoring
+- **🛡️ Security-First**: Security headers, input validation, dependency scanning
+- **📱 Responsive Design**: Mobile-first, accessible user interface
+
+## 🛠️ Technology Stack
+
+### Backend Stack
+| Technology | Version | Purpose |
+|-----------|---------|----------|
+| **Java** | 21 | Core language with modern features |
+| **Spring Boot** | 3.5.5 | Application framework |
+| **Spring Security** | 6.x | Authentication & authorization |
+| **Spring Data JPA** | 3.x | Data persistence layer |
+| **JWT** | 0.11.5 | Token-based authentication |
+| **MariaDB** | 10.11 | Production database |
+| **H2 Database** | 2.x | Development & testing |
+| **Flyway** | 9.12.0 | Database migrations |
+| **SpringDoc OpenAPI** | 2.5.0 | API documentation |
+| **Maven** | 3.9+ | Build automation |
+
+### Frontend Stack
+| Technology | Version | Purpose |
+|-----------|---------|----------|
+| **Angular** | 20 | SPA framework |
+| **TypeScript** | 5.8 | Type-safe JavaScript |
+| **RxJS** | 7.5 | Reactive programming |
+| **Angular CLI** | 20 | Development tooling |
+| **ESLint** | 8.57 | Code quality |
+| **Karma/Jasmine** | Latest | Unit testing |
+| **Protractor** | 7.0 | E2E testing |
+
+### DevOps & Infrastructure
+| Tool | Purpose |
+|------|----------|
+| **Docker** | Containerization |
+| **GitHub Actions** | CI/CD pipeline |
+| **Kubernetes** | Container orchestration |
+| **Nginx** | Reverse proxy & static content |
+| **Redis** | Caching layer |
+| **Trivy** | Security scanning |
+| **JaCoCo** | Code coverage |
+| **SonarQube** | Code quality analysis |
 
 ## Getting Started
 
