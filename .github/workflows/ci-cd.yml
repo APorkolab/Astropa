@@ -52,15 +52,13 @@ jobs:
   backend-test:
     name: Backend Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
     defaults:
       run:
         working-directory: ./backend
-    services:
-      h2:
-        image: oscarfonts/h2:latest
-        ports:
-          - 1521:1521
-          - 8082:8082
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -80,11 +78,12 @@ jobs:
     
     - name: Generate test report
       uses: dorny/test-reporter@v1
-      if: success() || failure()
+      if: always()
       with:
         name: Backend Tests
         path: backend/target/surefire-reports/*.xml
         reporter: java-junit
+        fail-on-error: false
     
     - name: Code Coverage
       run: mvn jacoco:report
