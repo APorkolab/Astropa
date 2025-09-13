@@ -176,7 +176,7 @@ jobs:
       run: npm run lint
     
     - name: Run unit tests
-      run: npm run test -- --no-watch --coverage --browsers=ChromeHeadless
+      run: npm run test -- --no-watch --code-coverage --browsers=ChromeHeadless
     
     - name: Upload coverage to Codecov
       if: env.CODECOV_TOKEN != ''
