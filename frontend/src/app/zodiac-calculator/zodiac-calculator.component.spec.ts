@@ -105,7 +105,7 @@ describe('ZodiacCalculatorComponent', () => {
   });
 
   it('should get projects', () => {
-    component.zodiac = mock.zodiac;
+    component.zodiac = mockZodiac;
     component.getProjects();
     expect(zodiacService.getProjects).toHaveBeenCalledWith('Rat');
     expect(component.projects).toEqual([{ name: 'Start a business' }]);

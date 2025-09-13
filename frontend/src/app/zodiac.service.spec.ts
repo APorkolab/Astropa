@@ -46,7 +46,7 @@ describe('ZodiacService', () => {
       expect(compatibility).toEqual([mockCompatibility]);
     });
 
-    const req = httpMock.expectOne(`/api/compatibilities/findByZodiacs?zodiac1Name=${zodiac1}&zodiac2Name=${zodiac2}`);
+    const req = httpMock.expectOne(`/api/compatibilities/${zodiac1}/${zodiac2}`);
     expect(req.request.method).toBe('GET');
     req.flush([mockCompatibility]);
   });
@@ -60,7 +60,7 @@ describe('ZodiacService', () => {
       expect(luckyYears).toEqual(mockLuckyYears);
     });
 
-    const req = httpMock.expectOne(`/api/lucky-years/findByZodiacAndYear?zodiacName=${zodiacName}&year=${year}`);
+    const req = httpMock.expectOne(`/api/lucky-years/${zodiacName}/${year}`);
     expect(req.request.method).toBe('GET');
     req.flush(mockLuckyYears);
   });
@@ -73,7 +73,7 @@ describe('ZodiacService', () => {
       expect(careers).toEqual(mockCareers);
     });
 
-    const req = httpMock.expectOne(`/api/careers/findByZodiac?zodiacName=${zodiacName}`);
+    const req = httpMock.expectOne(`/api/careers/${zodiacName}`);
     expect(req.request.method).toBe('GET');
     req.flush(mockCareers);
   });
@@ -86,7 +86,7 @@ describe('ZodiacService', () => {
       expect(personalities).toEqual(mockPersonalities);
     });
 
-    const req = httpMock.expectOne(`/api/personalities/findByZodiac?zodiacName=${zodiacName}`);
+    const req = httpMock.expectOne(`/api/personalities/${zodiacName}`);
     expect(req.request.method).toBe('GET');
     req.flush(mockPersonalities);
   });
