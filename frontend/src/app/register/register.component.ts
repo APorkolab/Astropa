@@ -16,6 +16,7 @@ export class RegisterComponent implements OnInit {
   constructor(private authService: AuthService) { }
 
   ngOnInit(): void {
+    // Component initialization - currently no setup required
   }
 
   onSubmit(): void {
