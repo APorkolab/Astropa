@@ -1,0 +1,270 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus-stack
+  namespace: argocd
+  labels:
+    app: prometheus-stack
+spec:
+  project: default
+  
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: 54.0.1
+    helm:
+      values: |
+        # Global settings
+        global:
+          scrapeInterval: 15s
+          evaluationInterval: 15s
+        
+        # Prometheus configuration
+        prometheus:
+          enabled: true
+          prometheusSpec:
+            replicas: 2
+            retention: 30d
+            retentionSize: 50GiB
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: gp2
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 50Gi
+            
+            resources:
+              requests:
+                cpu: 500m
+                memory: 2Gi
+              limits:
+                cpu: 2000m
+                memory: 8Gi
+            
+            # Service monitoring
+            serviceMonitorSelectorNilUsesHelmValues: false
+            podMonitorSelectorNilUsesHelmValues: false
+            ruleSelectorNilUsesHelmValues: false
+            
+            # Additional scrape configs for Astropa
+            additionalScrapeConfigs:
+              - job_name: 'astropa-backend'
+                kubernetes_sd_configs:
+                  - role: endpoints
+                    namespaces:
+                      names:
+                        - astropa
+                relabel_configs:
+                  - source_labels: [__meta_kubernetes_service_name]
+                    action: keep
+                    regex: astropa-backend
+                  - source_labels: [__meta_kubernetes_endpoint_port_name]
+                    action: keep
+                    regex: http
+        
+        # Grafana configuration
+        grafana:
+          enabled: true
+          replicas: 1
+          
+          adminPassword: "admin123"
+          
+          ingress:
+            enabled: true
+            ingressClassName: nginx
+            annotations:
+              nginx.ingress.kubernetes.io/rewrite-target: /
+            hosts:
+              - grafana.local
+            tls: []
+          
+          persistence:
+            enabled: true
+            storageClassName: gp2
+            size: 10Gi
+          
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          
+          # Default dashboards
+          defaultDashboardsEnabled: true
+          
+          # Custom dashboards for Astropa
+          dashboards:
+            astropa:
+              astropa-overview:
+                gnetId: 12900
+                revision: 1
+                datasource: Prometheus
+          
+          # Data sources
+          datasources:
+            datasources.yaml:
+              apiVersion: 1
+              datasources:
+                - name: Prometheus
+                  type: prometheus
+                  url: http://prometheus-stack-kube-prom-prometheus:9090
+                  access: proxy
+                  isDefault: true
+          
+          # Grafana configuration
+          grafana.ini:
+            server:
+              root_url: http://grafana.local
+            security:
+              allow_embedding: true
+            auth.anonymous:
+              enabled: true
+              org_role: Viewer
+        
+        # AlertManager configuration
+        alertmanager:
+          enabled: true
+          alertmanagerSpec:
+            replicas: 2
+            storage:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: gp2
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 5Gi
+            
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 200m
+                memory: 256Mi
+          
+          config:
+            global:
+              smtp_smarthost: 'localhost:587'
+              smtp_from: 'alerts@astropa.com'
+            
+            route:
+              group_by: ['alertname']
+              group_wait: 10s
+              group_interval: 10s
+              repeat_interval: 1h
+              receiver: 'web.hook'
+            
+            receivers:
+              - name: 'web.hook'
+                webhook_configs:
+                  - url: 'http://localhost:5001/webhook'
+        
+        # Node Exporter
+        nodeExporter:
+          enabled: true
+        
+        # Kube State Metrics
+        kubeStateMetrics:
+          enabled: true
+        
+        # Prometheus Operator
+        prometheusOperator:
+          enabled: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: astropa-backend
+  namespace: monitoring
+  labels:
+    app: astropa-backend
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: astropa
+      component: backend
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: 30s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - astropa
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: astropa-alerts
+  namespace: monitoring
+  labels:
+    app: astropa
+spec:
+  groups:
+    - name: astropa.rules
+      rules:
+        - alert: AstropaBackendDown
+          expr: up{job="astropa-backend"} == 0
+          for: 1m
+          labels:
+            severity: critical
+            service: astropa-backend
+          annotations:
+            summary: "Astropa Backend is down"
+            description: "Astropa backend service has been down for more than 1 minute."
+        
+        - alert: AstropaHighMemoryUsage
+          expr: container_memory_usage_bytes{pod=~"astropa-.*"} / container_spec_memory_limit_bytes > 0.8
+          for: 5m
+          labels:
+            severity: warning
+            service: astropa
+          annotations:
+            summary: "High memory usage in Astropa pods"
+            description: "Memory usage is above 80% for {{ $labels.pod }}"
+        
+        - alert: AstropaHighCPUUsage
+          expr: rate(container_cpu_usage_seconds_total{pod=~"astropa-.*"}[5m]) > 0.8
+          for: 5m
+          labels:
+            severity: warning
+            service: astropa
+          annotations:
+            summary: "High CPU usage in Astropa pods"
+            description: "CPU usage is above 80% for {{ $labels.pod }}"
+        
+        - alert: AstropaHighErrorRate
+          expr: rate(http_requests_total{job="astropa-backend",status=~"5.."}[5m]) > 0.1
+          for: 2m
+          labels:
+            severity: warning
+            service: astropa-backend
+          annotations:
+            summary: "High error rate in Astropa backend"
+            description: "Error rate is above 10% for Astropa backend"

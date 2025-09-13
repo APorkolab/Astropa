@@ -1,0 +1,173 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: astropa
+  namespace: argocd
+  labels:
+    app: astropa
+    environment: development
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/dr.porkolabadam/Astropa-2.git
+    targetRevision: main
+    path: k8s/helm-chart
+    helm:
+      values: |
+        global:
+          environment: development
+          domain: astropa.local
+        
+        backend:
+          image:
+            repository: ghcr.io/dr.porkolabadam/astropa-backend
+            tag: latest
+          replicaCount: 1
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+        
+        frontend:
+          image:
+            repository: ghcr.io/dr.porkolabadam/astropa-frontend
+            tag: latest
+          replicaCount: 1
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+        
+        mysql:
+          enabled: true
+          auth:
+            database: astropa
+            username: astropa
+          primary:
+            persistence:
+              size: 5Gi
+        
+        redis:
+          enabled: true
+          architecture: standalone
+          master:
+            persistence:
+              size: 2Gi
+        
+        hpa:
+          enabled: false
+        
+        monitoring:
+          enabled: false
+        
+        networkPolicies:
+          enabled: false
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: astropa
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  revisionHistoryLimit: 10
+
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      managedFieldsManagers:
+        - kube-controller-manager
+    - group: ""
+      kind: Secret
+      name: astropa-secrets
+      jsonPointers:
+        - /data
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: astropa-project
+  namespace: argocd
+spec:
+  description: Project for Astropa application
+  
+  sourceRepos:
+    - https://github.com/dr.porkolabadam/Astropa-2.git
+    - https://charts.bitnami.com/bitnami
+  
+  destinations:
+    - namespace: astropa
+      server: https://kubernetes.default.svc
+    - namespace: astropa-*
+      server: https://kubernetes.default.svc
+  
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+  
+  namespaceResourceWhitelist:
+    - group: ''
+      kind: ConfigMap
+    - group: ''
+      kind: Secret
+    - group: ''
+      kind: Service
+    - group: ''
+      kind: ServiceAccount
+    - group: apps
+      kind: Deployment
+    - group: apps
+      kind: ReplicaSet
+    - group: networking.k8s.io
+      kind: Ingress
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
+    - group: policy
+      kind: PodDisruptionBudget
+  
+  roles:
+    - name: admin
+      description: Admin access to Astropa project
+      policies:
+        - p, proj:astropa-project:admin, applications, *, astropa-project/*, allow
+        - p, proj:astropa-project:admin, repositories, *, *, allow
+      groups:
+        - astropa-admins
+    
+    - name: developer
+      description: Developer access to Astropa project
+      policies:
+        - p, proj:astropa-project:developer, applications, get, astropa-project/*, allow
+        - p, proj:astropa-project:developer, applications, sync, astropa-project/*, allow
+      groups:
+        - astropa-developers

@@ -1,0 +1,215 @@
+# Default values for Astropa Helm chart
+
+global:
+  environment: development
+  domain: astropa.local
+  
+# Backend Configuration
+backend:
+  enabled: true
+  image:
+    repository: astropa-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  replicaCount: 2
+  
+  service:
+    type: ClusterIP
+    port: 8080
+    targetPort: 8080
+  
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
+      nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    hosts:
+      - host: api.astropa.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  
+  env:
+    - name: SPRING_PROFILES_ACTIVE
+      value: "kubernetes"
+    - name: SPRING_DATASOURCE_URL
+      value: "jdbc:mysql://mysql:3306/astropa"
+    - name: SPRING_REDIS_HOST
+      value: "redis-master"
+    - name: SPRING_REDIS_PORT
+      value: "6379"
+  
+  envFromSecret:
+    - secretRef:
+        name: astropa-secrets
+  
+  livenessProbe:
+    httpGet:
+      path: /actuator/health
+      port: 8080
+    initialDelaySeconds: 60
+    periodSeconds: 30
+  
+  readinessProbe:
+    httpGet:
+      path: /actuator/health/readiness
+      port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 10
+
+# Frontend Configuration
+frontend:
+  enabled: true
+  image:
+    repository: astropa-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  replicaCount: 2
+  
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 80
+  
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
+    hosts:
+      - host: astropa.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+  env:
+    - name: API_BASE_URL
+      value: "http://api.astropa.local"
+
+# MySQL Configuration (using Bitnami chart)
+mysql:
+  enabled: true
+  auth:
+    rootPassword: "root123"
+    database: "astropa"
+    username: "astropa"
+    password: "astropa123"
+  
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClass: "gp2"
+  
+  metrics:
+    enabled: true
+  
+  architecture: standalone
+
+# Redis Configuration (using Bitnami chart)
+redis:
+  enabled: true
+  architecture: standalone
+  
+  auth:
+    enabled: false
+  
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+      storageClass: "gp2"
+  
+  metrics:
+    enabled: true
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "astropa-service-account"
+
+# Secrets
+secrets:
+  create: true
+  data:
+    SPRING_DATASOURCE_USERNAME: YXN0cm9wYQ== # astropa (base64)
+    SPRING_DATASOURCE_PASSWORD: YXN0cm9wYTEyMw== # astropa123 (base64)
+
+# ConfigMap
+configMap:
+  create: true
+  data:
+    application.properties: |
+      server.port=8080
+      spring.application.name=astropa
+      management.endpoints.web.exposure.include=health,info,metrics
+      management.endpoint.health.show-details=always
+      
+# Network Policies
+networkPolicies:
+  enabled: false
+  
+# Pod Security Policy
+podSecurityPolicy:
+  enabled: false
+  
+# Horizontal Pod Autoscaler
+hpa:
+  enabled: true
+  backend:
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  frontend:
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+
+# Pod Disruption Budget
+pdb:
+  enabled: true
+  backend:
+    minAvailable: 1
+  frontend:
+    minAvailable: 1
+
+# Monitoring
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+  grafana:
+    enabled: false
+    
+# Logging
+logging:
+  enabled: true
+  fluentd:
+    enabled: false
+  elasticsearch:
+    enabled: false

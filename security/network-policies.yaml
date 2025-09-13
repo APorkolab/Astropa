@@ -1,0 +1,278 @@
+# Network Policies for Astropa Application
+# These policies implement defense-in-depth security at the network level
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: astropa-backend-policy
+  namespace: astropa
+  labels:
+    app: astropa
+    component: backend
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: astropa
+      component: backend
+  policyTypes:
+  - Ingress
+  - Egress
+  
+  # Ingress rules - what can connect TO the backend
+  ingress:
+  # Allow traffic from frontend pods
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: astropa
+          component: frontend
+    ports:
+    - protocol: TCP
+      port: 8080
+  
+  # Allow traffic from ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8080
+  
+  # Allow traffic from monitoring namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 8080
+  
+  # Egress rules - what the backend can connect TO
+  egress:
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  
+  # Allow connection to MySQL database
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: mysql
+    ports:
+    - protocol: TCP
+      port: 3306
+  
+  # Allow connection to Redis cache
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  
+  # Allow HTTPS outbound for external APIs
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: astropa-frontend-policy
+  namespace: astropa
+  labels:
+    app: astropa
+    component: frontend
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: astropa
+      component: frontend
+  policyTypes:
+  - Ingress
+  - Egress
+  
+  # Ingress rules - what can connect TO the frontend
+  ingress:
+  # Allow traffic from ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 80
+  
+  # Allow traffic from monitoring namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 80
+  
+  # Egress rules - what the frontend can connect TO
+  egress:
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  
+  # Allow connection to backend
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: astropa
+          component: backend
+    ports:
+    - protocol: TCP
+      port: 8080
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mysql-policy
+  namespace: astropa
+  labels:
+    app: mysql
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: mysql
+  policyTypes:
+  - Ingress
+  - Egress
+  
+  # Ingress rules - what can connect TO MySQL
+  ingress:
+  # Allow traffic from backend pods
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: astropa
+          component: backend
+    ports:
+    - protocol: TCP
+      port: 3306
+  
+  # Allow traffic from monitoring namespace (for metrics)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 3306
+  
+  # Egress rules - what MySQL can connect TO
+  egress:
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redis-policy
+  namespace: astropa
+  labels:
+    app: redis
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: redis
+  policyTypes:
+  - Ingress
+  - Egress
+  
+  # Ingress rules - what can connect TO Redis
+  ingress:
+  # Allow traffic from backend pods
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: astropa
+          component: backend
+    ports:
+    - protocol: TCP
+      port: 6379
+  
+  # Allow traffic from monitoring namespace (for metrics)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 6379
+  
+  # Egress rules - what Redis can connect TO
+  egress:
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+---
+# Default deny all policy for the namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: astropa
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  
+  # No rules defined = deny all traffic
+  # This is overridden by the more specific policies above
+
+---
+# Allow monitoring namespace to scrape metrics
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-monitoring-ingress
+  namespace: astropa
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  
+  ingress:
+  # Allow Prometheus to scrape metrics from all pods
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+  
+  # Allow traffic within the same namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: astropa

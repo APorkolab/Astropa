@@ -26,9 +26,6 @@
   "lint-staged": {
     "frontend/src/**/*.{ts,html,scss}": [
       "cd frontend && npm run lint:fix"
-    ],
-    "*.{js,json,md}": [
-      "prettier --write"
     ]
   },
   "workspaces": [
