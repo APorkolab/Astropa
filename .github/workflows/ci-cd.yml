@@ -297,18 +297,73 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Set up Docker Compose
+    - name: Set up Node.js for E2E tests
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package.json
+    
+    - name: Install frontend dependencies
+      working-directory: ./frontend
+      run: npm ci
+    
+    - name: Install Playwright browsers
+      working-directory: ./frontend
+      run: npx playwright install --with-deps
+    
+    - name: Start test services
       run: |
-        docker-compose -f docker-compose.test.yml up -d
+        docker compose -f docker-compose.test.yml up -d test-database backend
+        echo "Waiting for services to start..."
         sleep 30
     
-    - name: Run E2E tests
+    - name: Wait for backend to be healthy
       run: |
-        docker-compose -f docker-compose.test.yml exec -T frontend npm run e2e
+        echo "Waiting for backend to be healthy..."
+        timeout 300 bash -c 'until curl -f http://localhost:8081/actuator/health > /dev/null 2>&1; do echo "Waiting for backend..."; sleep 5; done'
+    
+    - name: Build frontend for E2E
+      working-directory: ./frontend
+      run: npm run build
+    
+    - name: Serve frontend for E2E
+      working-directory: ./frontend
+      run: |
+        npx http-server dist/astropa -p 4200 &
+        echo $! > frontend.pid
+        sleep 10
+    
+    - name: Run Playwright E2E tests
+      working-directory: ./frontend
+      env:
+        PLAYWRIGHT_BASE_URL: http://localhost:4200
+        API_BASE_URL: http://localhost:8081
+      run: npx playwright test
+    
+    - name: Upload Playwright report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report
+        path: frontend/playwright-report/
+        retention-days: 30
+    
+    - name: Show service logs on failure
+      if: failure()
+      run: |
+        echo "Backend logs:"
+        docker compose -f docker-compose.test.yml logs backend
     
     - name: Cleanup
       if: always()
-      run: docker-compose -f docker-compose.test.yml down
+      run: |
+        # Stop frontend server
+        if [ -f frontend/frontend.pid ]; then
+          kill $(cat frontend/frontend.pid) || true
+        fi
+        # Stop Docker services
+        docker compose -f docker-compose.test.yml down
 
   # Deployment to Staging
   deploy-staging:
