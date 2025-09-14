@@ -18,7 +18,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/astropa
+  IMAGE_NAME: ${{ github.repository_owner }}
   JAVA_VERSION: '21'
   NODE_VERSION: '20'
 
@@ -124,8 +124,9 @@ jobs:
     
     - name: Build Docker image
       run: |
-        docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:${{ github.sha }} .
-        docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:latest .
+        IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+        docker build -t ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}/astropa/backend:${{ github.sha }} .
+        docker build -t ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}/astropa/backend:latest .
     
     - name: Log in to Container Registry
       if: github.event_name != 'pull_request'
@@ -138,12 +139,15 @@ jobs:
     - name: Push Docker image
       if: github.event_name != 'pull_request'
       run: |
-        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:${{ github.sha }}
-        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:latest
+        IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+        docker push ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}/astropa/backend:${{ github.sha }}
+        docker push ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}/astropa/backend:latest
     
     - name: Set image output
       id: image
-      run: echo "image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:${{ github.sha }}" >> $GITHUB_OUTPUT
+      run: |
+        IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+        echo "image=${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}/astropa/backend:${{ github.sha }}" >> $GITHUB_OUTPUT
 
   # Frontend Pipeline
   frontend-test:
@@ -251,8 +255,9 @@ jobs:
     - name: Build Docker image
       if: env.frontend_exists == 'true'
       run: |
-        docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ github.sha }} .
-        docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:latest .
+        IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+        docker build -t ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}/astropa/frontend:${{ github.sha }} .
+        docker build -t ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}/astropa/frontend:latest .
     
     - name: Log in to Container Registry
       if: github.event_name != 'pull_request' && env.frontend_exists == 'true'
@@ -265,13 +270,16 @@ jobs:
     - name: Push Docker image
       if: github.event_name != 'pull_request' && env.frontend_exists == 'true'
       run: |
-        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ github.sha }}
-        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:latest
+        IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+        docker push ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}/astropa/frontend:${{ github.sha }}
+        docker push ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}/astropa/frontend:latest
     
     - name: Set image output
       if: env.frontend_exists == 'true'
       id: image
-      run: echo "image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ github.sha }}" >> $GITHUB_OUTPUT
+      run: |
+        IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+        echo "image=${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}/astropa/frontend:${{ github.sha }}" >> $GITHUB_OUTPUT
 
   # End-to-End Tests
   e2e-tests:
