@@ -18,7 +18,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository_owner }}/astropa
   JAVA_VERSION: '21'
   NODE_VERSION: '20'
 
@@ -156,6 +156,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
+    - name: Check if frontend directory exists
+      run: |
+        if [ ! -d "./frontend" ]; then
+          echo "Frontend directory not found, skipping frontend tests"
+          exit 1
+        fi
+    
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
@@ -201,6 +208,13 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+    
+    - name: Check if frontend directory exists
+      run: |
+        if [ ! -d "./frontend" ]; then
+          echo "Frontend directory not found, skipping frontend build"
+          exit 1
+        fi
     
     - name: Set up Node.js
       uses: actions/setup-node@v4
@@ -317,12 +331,12 @@ jobs:
     
     - name: Create GitHub Release
       if: github.ref == 'refs/heads/main'
-      uses: actions/create-release@v1
+      uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: v${{ github.run_number }}
-        release_name: Release v${{ github.run_number }}
+        name: Release v${{ github.run_number }}
         body: |
           Automated release created by GitHub Actions
           

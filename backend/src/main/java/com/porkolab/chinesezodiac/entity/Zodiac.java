@@ -36,7 +36,12 @@ public class Zodiac {
     )
     private Set<Project> projects;
 
-    @ManyToMany(mappedBy = "zodiacs")
+    @ManyToMany
+    @JoinTable(
+            name = "zodiac_life_stage",
+            joinColumns = @JoinColumn(name = "zodiac_id"),
+            inverseJoinColumns = @JoinColumn(name = "life_stage_id")
+    )
     private Set<LifeStage> lifeStages;
 
     @ManyToMany
