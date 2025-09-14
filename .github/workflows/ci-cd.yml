@@ -174,8 +174,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: package-lock.json
     
     - name: Install dependencies
       if: env.frontend_exists == 'true'
@@ -227,8 +225,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: package-lock.json
     
     - name: Install dependencies
       if: env.frontend_exists == 'true'
@@ -281,8 +277,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: package-lock.json
     
     - name: Install dependencies (monorepo)
       run: npm ci
