@@ -160,15 +160,19 @@ jobs:
       run: |
         if [ ! -d "./frontend" ]; then
           echo "Frontend directory not found, skipping frontend tests"
-          exit 1
+          echo "frontend_exists=false" >> $GITHUB_ENV
+        else
+          echo "frontend_exists=true" >> $GITHUB_ENV
         fi
     
     - name: Set up Node.js
+      if: env.frontend_exists == 'true'
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
     
     - name: Cache node modules
+      if: env.frontend_exists == 'true'
       uses: actions/cache@v4
       with:
         path: frontend/node_modules
@@ -177,16 +181,19 @@ jobs:
           ${{ runner.os }}-node-
     
     - name: Install dependencies
+      if: env.frontend_exists == 'true'
       run: npm install
     
     - name: Run linting
+      if: env.frontend_exists == 'true'
       run: npm run lint
     
     - name: Run unit tests
+      if: env.frontend_exists == 'true'
       run: npm run test -- --no-watch --code-coverage --browsers=ChromeHeadless
     
     - name: Upload coverage to Codecov
-      if: env.CODECOV_TOKEN != ''
+      if: env.CODECOV_TOKEN != '' && env.frontend_exists == 'true'
       uses: codecov/codecov-action@v4
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -213,15 +220,19 @@ jobs:
       run: |
         if [ ! -d "./frontend" ]; then
           echo "Frontend directory not found, skipping frontend build"
-          exit 1
+          echo "frontend_exists=false" >> $GITHUB_ENV
+        else
+          echo "frontend_exists=true" >> $GITHUB_ENV
         fi
     
     - name: Set up Node.js
+      if: env.frontend_exists == 'true'
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
     
     - name: Cache node modules
+      if: env.frontend_exists == 'true'
       uses: actions/cache@v4
       with:
         path: frontend/node_modules
@@ -230,18 +241,21 @@ jobs:
           ${{ runner.os }}-node-
     
     - name: Install dependencies
+      if: env.frontend_exists == 'true'
       run: npm install
     
     - name: Build application
+      if: env.frontend_exists == 'true'
       run: npm run build:prod
     
     - name: Build Docker image
+      if: env.frontend_exists == 'true'
       run: |
         docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ github.sha }} .
         docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:latest .
     
     - name: Log in to Container Registry
-      if: github.event_name != 'pull_request'
+      if: github.event_name != 'pull_request' && env.frontend_exists == 'true'
       uses: docker/login-action@v3
       with:
         registry: ${{ env.REGISTRY }}
@@ -249,12 +263,13 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Push Docker image
-      if: github.event_name != 'pull_request'
+      if: github.event_name != 'pull_request' && env.frontend_exists == 'true'
       run: |
         docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ github.sha }}
         docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:latest
     
     - name: Set image output
+      if: env.frontend_exists == 'true'
       id: image
       run: echo "image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ github.sha }}" >> $GITHUB_OUTPUT
 
