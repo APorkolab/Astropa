@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+.angular
+dist
+coverage
+e2e/reports
+*.log
+.git
+.gitignore
+README.md
+.editorconfig
+.vscode
+*.zip
+*.tar.gz

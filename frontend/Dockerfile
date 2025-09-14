@@ -7,13 +7,13 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm install
 
 # Copy source code
 COPY . .
 
 # Build the application for production
-RUN npm run build --prod
+RUN npm run build:prod
 
 # Production stage with nginx
 FROM nginx:1.25-alpine
