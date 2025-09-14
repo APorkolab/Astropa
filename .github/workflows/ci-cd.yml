@@ -177,7 +177,14 @@ jobs:
     
     - name: Install dependencies
       if: env.frontend_exists == 'true'
-      run: npm ci
+      run: |
+        if [ -f package-lock.json ]; then
+          echo "Found package-lock.json, using npm ci"
+          npm ci
+        else
+          echo "No package-lock.json found, using npm install"
+          npm install
+        fi
     
     - name: Run linting
       if: env.frontend_exists == 'true'
@@ -228,7 +235,14 @@ jobs:
     
     - name: Install dependencies
       if: env.frontend_exists == 'true'
-      run: npm ci
+      run: |
+        if [ -f package-lock.json ]; then
+          echo "Found package-lock.json, using npm ci"
+          npm ci
+        else
+          echo "No package-lock.json found, using npm install"
+          npm install
+        fi
     
     - name: Build application
       if: env.frontend_exists == 'true'
@@ -278,8 +292,24 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
     
+    - name: Debug file structure
+      run: |
+        echo "Current directory:"
+        pwd
+        echo "Files in current directory:"
+        ls -la
+        echo "Looking for package-lock.json:"
+        find . -name "package-lock.json" -type f
+    
     - name: Install dependencies (monorepo)
-      run: npm ci
+      run: |
+        if [ -f package-lock.json ]; then
+          echo "Found package-lock.json, using npm ci"
+          npm ci
+        else
+          echo "No package-lock.json found, using npm install"
+          npm install
+        fi
     
     - name: Install Playwright browsers
       working-directory: ./frontend
