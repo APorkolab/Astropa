@@ -6,13 +6,273 @@
 
     <changeSet id="1" author="yourname">
         <createTable tableName="zodiac">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="start_date" type="date">
+                <constraints nullable="false"/>
+            </column>
+            <column name="end_date" type="date">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(1000)"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="2" author="yourname">
+        <createTable tableName="users">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="username" type="varchar(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="password" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="3" author="yourname">
+        <createTable tableName="roles">
             <column name="id" type="int" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="name" type="varchar(255)"/>
-            <column name="start_date" type="date"/>
-            <column name="end_date" type="date"/>
+            <column name="name" type="varchar(20)">
+                <constraints nullable="false" unique="true"/>
+            </column>
         </createTable>
+    </changeSet>
+
+    <changeSet id="4" author="yourname">
+        <createTable tableName="user_roles">
+            <column name="user_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_id" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="user_roles" columnNames="user_id,role_id"/>
+        <addForeignKeyConstraint constraintName="fk_user_roles_user"
+                                 baseTableName="user_roles" baseColumnNames="user_id"
+                                 referencedTableName="users" referencedColumnNames="id"/>
+        <addForeignKeyConstraint constraintName="fk_user_roles_role"
+                                 baseTableName="user_roles" baseColumnNames="role_id"
+                                 referencedTableName="roles" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="5" author="yourname">
+        <createTable tableName="career">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(1000)"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="6" author="yourname">
+        <createTable tableName="personality">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(1000)"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="7" author="yourname">
+        <createTable tableName="project">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(1000)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="8" author="yourname">
+        <createTable tableName="goal">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(1000)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="9" author="yourname">
+        <createTable tableName="divination">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(1000)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="10" author="yourname">
+        <createTable tableName="life_stage">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(1000)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="11" author="yourname">
+        <createTable tableName="lucky_year">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="zodiac_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lucky_year" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_lucky" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(1000)"/>
+        </createTable>
+        <addForeignKeyConstraint constraintName="fk_lucky_year_zodiac"
+                                 baseTableName="lucky_year" baseColumnNames="zodiac_id"
+                                 referencedTableName="zodiac" referencedColumnNames="id"/>
+    </changeSet>
+
+    <!-- Join Tables for Many-to-Many Relationships -->
+    <changeSet id="12" author="yourname">
+        <createTable tableName="zodiac_career">
+            <column name="zodiac_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="career_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="zodiac_career" columnNames="zodiac_id,career_id"/>
+        <addForeignKeyConstraint constraintName="fk_zodiac_career_zodiac"
+                                 baseTableName="zodiac_career" baseColumnNames="zodiac_id"
+                                 referencedTableName="zodiac" referencedColumnNames="id"/>
+        <addForeignKeyConstraint constraintName="fk_zodiac_career_career"
+                                 baseTableName="zodiac_career" baseColumnNames="career_id"
+                                 referencedTableName="career" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="13" author="yourname">
+        <createTable tableName="zodiac_personality">
+            <column name="zodiac_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="personality_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="zodiac_personality" columnNames="zodiac_id,personality_id"/>
+        <addForeignKeyConstraint constraintName="fk_zodiac_personality_zodiac"
+                                 baseTableName="zodiac_personality" baseColumnNames="zodiac_id"
+                                 referencedTableName="zodiac" referencedColumnNames="id"/>
+        <addForeignKeyConstraint constraintName="fk_zodiac_personality_personality"
+                                 baseTableName="zodiac_personality" baseColumnNames="personality_id"
+                                 referencedTableName="personality" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="14" author="yourname">
+        <createTable tableName="zodiac_project">
+            <column name="zodiac_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="project_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="zodiac_project" columnNames="zodiac_id,project_id"/>
+        <addForeignKeyConstraint constraintName="fk_zodiac_project_zodiac"
+                                 baseTableName="zodiac_project" baseColumnNames="zodiac_id"
+                                 referencedTableName="zodiac" referencedColumnNames="id"/>
+        <addForeignKeyConstraint constraintName="fk_zodiac_project_project"
+                                 baseTableName="zodiac_project" baseColumnNames="project_id"
+                                 referencedTableName="project" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="15" author="yourname">
+        <createTable tableName="zodiac_goal">
+            <column name="zodiac_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="goal_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="zodiac_goal" columnNames="zodiac_id,goal_id"/>
+        <addForeignKeyConstraint constraintName="fk_zodiac_goal_zodiac"
+                                 baseTableName="zodiac_goal" baseColumnNames="zodiac_id"
+                                 referencedTableName="zodiac" referencedColumnNames="id"/>
+        <addForeignKeyConstraint constraintName="fk_zodiac_goal_goal"
+                                 baseTableName="zodiac_goal" baseColumnNames="goal_id"
+                                 referencedTableName="goal" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="16" author="yourname">
+        <createTable tableName="zodiac_divination">
+            <column name="zodiac_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="divination_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="zodiac_divination" columnNames="zodiac_id,divination_id"/>
+        <addForeignKeyConstraint constraintName="fk_zodiac_divination_zodiac"
+                                 baseTableName="zodiac_divination" baseColumnNames="zodiac_id"
+                                 referencedTableName="zodiac" referencedColumnNames="id"/>
+        <addForeignKeyConstraint constraintName="fk_zodiac_divination_divination"
+                                 baseTableName="zodiac_divination" baseColumnNames="divination_id"
+                                 referencedTableName="divination" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="17" author="yourname">
+        <createTable tableName="zodiac_life_stage">
+            <column name="zodiac_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="life_stage_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="zodiac_life_stage" columnNames="zodiac_id,life_stage_id"/>
+        <addForeignKeyConstraint constraintName="fk_zodiac_life_stage_zodiac"
+                                 baseTableName="zodiac_life_stage" baseColumnNames="zodiac_id"
+                                 referencedTableName="zodiac" referencedColumnNames="id"/>
+        <addForeignKeyConstraint constraintName="fk_zodiac_life_stage_life_stage"
+                                 baseTableName="zodiac_life_stage" baseColumnNames="life_stage_id"
+                                 referencedTableName="life_stage" referencedColumnNames="id"/>
     </changeSet>
 
 </databaseChangeLog>
