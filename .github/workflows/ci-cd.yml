@@ -331,7 +331,7 @@ jobs:
     
     - name: Serve frontend for E2E
       run: |
-        cd frontend && npx http-server dist/astropa -p 4200 &
+        cd frontend && npx http-server dist/astropa/browser -p 4200 &
         echo $! > frontend.pid
         sleep 10
     
