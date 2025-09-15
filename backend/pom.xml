@@ -66,9 +66,9 @@
 			<scope>test</scope>
 		</dependency>
 <dependency>
-  <groupId>org.flywaydb</groupId>
-  <artifactId>flyway-core</artifactId>
-  <version>11.12.0</version>
+  <groupId>org.liquibase</groupId>
+  <artifactId>liquibase-core</artifactId>
+  <version>4.29.2</version>
 </dependency>
 <dependency>
     <groupId>org.springdoc</groupId>
@@ -273,23 +273,15 @@
 				</executions>
 			</plugin>
             <plugin>
-                <groupId>org.flywaydb</groupId>
-                <artifactId>flyway-maven-plugin</artifactId>
-                <version>11.12.0</version>
+                <groupId>org.liquibase</groupId>
+                <artifactId>liquibase-maven-plugin</artifactId>
+                <version>4.29.2</version>
                 <configuration>
+                    <changeLogFile>src/main/resources/db/changelog/db.changelog-master.xml</changeLogFile>
                     <url>jdbc:h2:file:~/test</url>
-                    <user>tarara</user>
+                    <username>tarara</username>
                     <password>12345</password>
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>repair</id>
-                        <phase>pre-integration-test</phase>
-                        <goals>
-                            <goal>repair</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
 		</plugins>
 	</build>
