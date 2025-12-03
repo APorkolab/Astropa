@@ -1,7 +1,5 @@
 # 🌟 Astropa - Chinese Zodiac Information Platform
 
-[![CI/CD Pipeline](https://github.com/yourusername/astropa-2/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/yourusername/astropa-2/actions/workflows/ci-cd.yml)
-[![codecov](https://codecov.io/gh/yourusername/astropa-2/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/astropa-2)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=yourusername_astropa-2&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=yourusername_astropa-2)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
