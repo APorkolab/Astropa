@@ -1,6 +1,5 @@
 # 🌟 Astropa - Chinese Zodiac Information Platform
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=yourusername_astropa-2&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=yourusername_astropa-2)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A sophisticated, enterprise-grade full-stack web application that provides comprehensive Chinese zodiac information with modern architecture, security best practices, and production-ready infrastructure.
